@@ -1,7 +1,10 @@
 app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'https://assessment-frontend-naae1edzg-e0423030-alts-projects.vercel.app'
-  ],
+  origin: function(origin, callback) {
+    if (!origin || origin.includes('e0423030-alts-projects.vercel.app') || origin.includes('localhost')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
