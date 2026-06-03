@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        .result { border: 1px solid #ccc; padding: 10px; margin: 10px 0; background: #f9f9f9; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background: #f0f0f0; padding: 10px; overflow: auto; }
+    </style>
+</head>
+<body>
+    <h1>Backend API Test</h1>
+    
+    <button onclick="testLogin()">1. Test Login</button>
+    <button onclick="testAnalytics()">2. Get Analytics</button>
+    <button onclick="testProjects()">3. Get Projects</button>
+    <button onclick="testIssues()">4. Get Issues</button>
+    
+    <div id="result" class="result" style="display:none;"></div>
+    
+    <script>
+        let token = '';
+        const apiUrl = 'http://localhost:5000/api';
+        
+        function showResult(title, data) {
+            const elem = document.getElementById('result');
+            elem.innerHTML = `<h3>${title}</h3><pre>${JSON.stringify(data, null, 2)}</pre>`;
+            elem.style.display = 'block';
+        }
+        
+        async function testLogin() {
+            try {
+                const res = await fetch(apiUrl + '/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: 'admin@test.com', password: 'admin123' })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    token = data.data.token;
+                    showResult('✅ LOGIN SUCCESS', { token: token.substring(0, 30) + '...', user: data.data.user });
+                } else {
+                    showResult('❌ LOGIN FAILED', data);
+                }
+            } catch (error) {
+                showResult('❌ ERROR', { error: error.message });
+            }
+        }
+        
+        async function testAnalytics() {
+            if (!token) { alert('Login first!'); return; }
+            try {
+                const res = await fetch(apiUrl + '/analytics/issues', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                showResult('✅ ANALYTICS', data);
+            } catch (error) {
+                showResult('❌ ERROR', { error: error.message });
+            }
+        }
+        
+        async function testProjects() {
+            if (!token) { alert('Login first!'); return; }
+            try {
+                const res = await fetch(apiUrl + '/projects', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                const projects = data.data.map(p => ({ id: p._id, title: p.title, owner: p.owner?.name }));
+                showResult('✅ PROJECTS (' + projects.length + ')', projects);
+            } catch (error) {
+                showResult('❌ ERROR', { error: error.message });
+            }
+        }
+        
+        async function testIssues() {
+            if (!token) { alert('Login first!'); return; }
+            try {
+                const res = await fetch(apiUrl + '/issues', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                const issues = data.data.map(i => ({ id: i._id, title: i.title, status: i.status, priority: i.priority }));
+                showResult('✅ ISSUES (' + issues.length + ')', issues);
+            } catch (error) {
+                showResult('❌ ERROR', { error: error.message });
+            }
+        }
+        
+        // Auto-test on page load
+        window.addEventListener('load', () => {
+            document.body.innerHTML += '<p>Testing backend connectivity...</p>';
+            setTimeout(() => testLogin(), 1000);
+        });
+    </script>
+</body>
+</html>
